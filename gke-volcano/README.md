@@ -28,7 +28,8 @@ gcloud builds submit . --region=us-east1
 ## Setup Volcano job task,
 job file is under gke-volcano/a3mega-job.yaml
 
-### Update the following, line 22 replicas=1 for master, line 128, adjust for number of workers. Altogether is total number of A3mega nodes, one for master
+### Update the job file
+line 22 replicas=1 for master, line 128, adjust for number of workers. Altogether is total number of A3mega nodes, one for master, n-1 for workers
 ### The default training parameters files:
 Deepseek v3 16b: torchtitan/models/deepseek_v3/train_configs/deepseek_v3_16b.toml
 
@@ -43,6 +44,7 @@ run_train.sh file on root directory updated to run on distributed nodes( default
 kubectl apply -f a3mega-job.yaml
 
 The logs will provide MFU benchmark per 10 steps.
+
 
 
 
