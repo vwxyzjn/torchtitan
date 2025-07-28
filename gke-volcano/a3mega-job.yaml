@@ -91,7 +91,7 @@ spec:
                 source ${NCCL_LIB_DIR}/nccl-env-profile.sh
                 #sleep infinity
                 PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
-                CONFIG_FILE="./torchtitan/models/deepseek_v3/train_configs/deepseek_v3_16b.toml" ./run_train.sh
+                CONFIG_FILE="/gcs-dir/configs/deepseek_v3_16b.toml" ./run_train.sh
                 
               env:
                - name: LD_LIBRARY_PATH
@@ -199,7 +199,7 @@ spec:
                 source ${NCCL_LIB_DIR}/nccl-env-profile.sh
                 #sleep infinity
                 PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
-                CONFIG_FILE="./torchtitan/models/deepseek_v3/train_configs/deepseek_v3_16b.toml" ./run_train.sh
+                CONFIG_FILE="/gcs-dir/configs/deepseek_v3_16b.toml" ./run_train.sh
                 
               env:
                - name: LD_LIBRARY_PATH
