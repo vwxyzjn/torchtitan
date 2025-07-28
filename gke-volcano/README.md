@@ -38,7 +38,7 @@ Line 94, CONFIG_FILE="/gcs-dir/configs/deepseek_v3_16b.toml" ./run_train.sh
 Line 202, CONFIG_FILE="/gcs-dir/configs/deepseek_v3_16b.toml" ./run_train.sh
 replace both line with you own config file and path, default one is ./torchtitan/models/deepseek_v3/train_configs/
 You can store your own config files on GCS fuse, since you may keep updating config file and run_train.sh file
-
+run_train.sh file on root directory updated to run on distributed nodes( default scripts local only)
 ## Run Volcano job task,
 kubectl apply -f a3mega-job.yaml
 
