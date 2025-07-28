@@ -23,7 +23,7 @@ cloudbuild.yaml and Dockerfile in root directory:
 git clone https://github.com/llm-on-gke/torchtitan.git
 cd $HOME torch
 gcloud builds submit . --region=us-east1
-```bash
+```
 
 ## Setup Volcano job task,
 job file is under gke-volcano/a3mega-job.yaml
