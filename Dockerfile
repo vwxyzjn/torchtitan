@@ -2,12 +2,12 @@
 # https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/index.html
 # BASE_IMAGE=nvcr.io/nvidia/pytorch:24.02-py3
 # https://github.com/orgs/pytorch/packages/container/pytorch-nightly/versions
-ARG BASE_IMAGE=ghcr.io/pytorch/pytorch-nightly:2.9.0.dev20250720-cuda12.6-cudnn9-runtime
+ARG BASE_IMAGE=ghcr.io/pytorch/pytorch-nightly:2.9.0.dev20250728-cuda12.9-cudnn9-devel
 FROM ${BASE_IMAGE}
 
 RUN apt-get -y update && \
     apt-get -y install git build-essential && \
-    git clone --depth 1 https://github.com/llm-on-gke/torchtitan && \
+    git clone --depth 1 -b merge-rick-branch https://github.com/vwxyzjn/torchtitan && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 
