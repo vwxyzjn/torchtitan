@@ -1,0 +1,235 @@
+# vcjob-quickstart.yaml
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: a3-mega
+spec:
+  minAvailable: 1
+  schedulerName: volcano
+  # If you omit the 'queue' field, the 'default' queue will be used.
+  # queue: default
+  policies:
+   - event: TaskCompleted
+     action: CompleteJob
+  plugins:
+    pytorch:
+      - --master=master
+      - --worker=worker
+      #- --port=3389 
+    ssh: [] 
+  tasks:
+    - replicas: 1
+      name: master
+      policies:
+      # When this specific task completes successfully, mark the entire job as Complete.
+      - event: TaskCompleted
+        action: CompleteJob
+      template:
+        metadata:
+             annotations:
+               gke-gcsfuse/volumes: "true"
+        spec:
+          nodeSelector:
+             cloud.google.com/gke-accelerator: nvidia-h100-mega-80gb #for non dws
+          tolerations:
+               - key: "nvidia.com/gpu"
+                 operator: "Exists"
+                 effect: "NoSchedule"
+          volumes:
+            - name: libraries
+              hostPath:
+                path: /home/kubernetes/bin/nvidia
+            - name: sys
+              hostPath:
+               path: /sys
+            - name: proc-sys
+              hostPath:
+               path: /proc/sys
+            - name: aperture-devices
+              hostPath:
+               path: /dev/aperture_devices
+            - name: gcs-fuse-csi-ephemeral
+              csi:
+                driver: gcsfuse.csi.storage.gke.io
+                readOnly: false
+                volumeAttributes:
+                   bucketName: rick-llama-factory
+                   mountOptions: "implicit-dirs"
+                   gcsfuseLoggingSeverity: warning
+                   fileCacheCapacity: "200Gi"
+            - name: dshm
+              emptyDir:
+                medium: Memory
+          serviceAccountName: storage-access
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          initContainers:
+            - name: tcpxo-daemon
+              image: us-docker.pkg.dev/gce-ai-infra/gpudirect-tcpxo/tcpgpudmarxd-dev:v1.0.17
+              imagePullPolicy: IfNotPresent
+              restartPolicy: Always
+              securityContext:
+                privileged: true   
+              volumeMounts:
+               - name: libraries
+                 mountPath: /usr/local/nvidia
+               - name: sys
+                 mountPath: /hostsysfs
+               - name: proc-sys
+                 mountPath: /hostprocsysfs
+              env:
+                - name: LD_LIBRARY_PATH
+                  value: /usr/local/nvidia/lib64
+          containers:
+            - image: us-east1-docker.pkg.dev/northam-ce-mlai-tpu/gke-llm/torchtitan:latest
+              name: master
+              command:
+              - bash
+              - -xc
+              - |
+                NCCL_LIB_DIR="/usr/local/nvidia/lib64"
+                source ${NCCL_LIB_DIR}/nccl-env-profile.sh
+                #sleep infinity
+                PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+                CONFIG_FILE="/gcs-dir/configs/deepseek_v3_16b.toml" ./run_train.sh
+                
+              env:
+               - name: LD_LIBRARY_PATH
+                 value: /usr/local/nvidia/lib64
+               - name: NCCL_FASTRAK_LLCM_DEVICE_DIRECTORY
+                 value: /dev/aperture_devices
+               - name: PYTHONUNBUFFERED
+                 value: "0"
+               - name: HUGGING_FACE_HUB_TOKEN
+                 valueFrom:
+                  secretKeyRef:
+                     name: hf-secret
+                     key: hf_api_token
+              securityContext:
+              volumeMounts:
+               - name: aperture-devices
+                 mountPath: /dev/aperture_devices
+               - name: libraries
+                 mountPath: /usr/local/nvidia
+               - mountPath: /dev/shm
+                 name: dshm
+               - mountPath: /gcs-dir
+                 name: gcs-fuse-csi-ephemeral
+          
+              resources:
+                requests:
+                  #cpu: 1
+                  nvidia.com/gpu: 8
+                limits:
+                  #cpu: 1
+                  nvidia.com/gpu: 8
+
+          restartPolicy: OnFailure
+    
+    - replicas: 1
+      name: worker
+      policies:
+      # When this specific task completes successfully, mark the entire job as Complete.
+      - event: TaskCompleted
+        action: CompleteJob
+      template:
+        metadata:
+             annotations:
+               gke-gcsfuse/volumes: "true"
+        spec:
+          nodeSelector:
+             cloud.google.com/gke-accelerator: nvidia-h100-mega-80gb #for non dws
+          tolerations:
+               - key: "nvidia.com/gpu"
+                 operator: "Exists"
+                 effect: "NoSchedule"
+          volumes:
+            - name: libraries
+              hostPath:
+                path: /home/kubernetes/bin/nvidia
+            - name: sys
+              hostPath:
+               path: /sys
+            - name: proc-sys
+              hostPath:
+               path: /proc/sys
+            - name: aperture-devices
+              hostPath:
+               path: /dev/aperture_devices
+            - name: gcs-fuse-csi-ephemeral
+              csi:
+                driver: gcsfuse.csi.storage.gke.io
+                readOnly: false
+                volumeAttributes:
+                   bucketName: rick-llama-factory
+                   mountOptions: "implicit-dirs"
+                   gcsfuseLoggingSeverity: warning
+                   fileCacheCapacity: "200Gi"
+            - name: dshm
+              emptyDir:
+                medium: Memory
+          serviceAccountName: storage-access
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          initContainers:
+            - name: tcpxo-daemon
+              image: us-docker.pkg.dev/gce-ai-infra/gpudirect-tcpxo/tcpgpudmarxd-dev:v1.0.17
+              imagePullPolicy: IfNotPresent
+              restartPolicy: Always
+              securityContext:
+                privileged: true   
+              volumeMounts:
+               - name: libraries
+                 mountPath: /usr/local/nvidia
+               - name: sys
+                 mountPath: /hostsysfs
+               - name: proc-sys
+                 mountPath: /hostprocsysfs
+              env:
+                - name: LD_LIBRARY_PATH
+                  value: /usr/local/nvidia/lib64
+          containers:
+            - image: us-east1-docker.pkg.dev/northam-ce-mlai-tpu/gke-llm/torchtitan:latest
+              name: worker
+              command:
+              - bash
+              - -xc
+              - |
+                NCCL_LIB_DIR="/usr/local/nvidia/lib64"
+                source ${NCCL_LIB_DIR}/nccl-env-profile.sh
+                #sleep infinity
+                PYTORCH_CUDA_ALLOC_CONF="expandable_segments:True"
+                CONFIG_FILE="/gcs-dir/configs/deepseek_v3_16b.toml" ./run_train.sh
+                
+              env:
+               - name: LD_LIBRARY_PATH
+                 value: /usr/local/nvidia/lib64
+               - name: NCCL_FASTRAK_LLCM_DEVICE_DIRECTORY
+                 value: /dev/aperture_devices
+               - name: PYTHONUNBUFFERED
+                 value: "0"
+               - name: HUGGING_FACE_HUB_TOKEN
+                 valueFrom:
+                  secretKeyRef:
+                     name: hf-secret
+                     key: hf_api_token
+              securityContext:
+              volumeMounts:
+               - name: aperture-devices
+                 mountPath: /dev/aperture_devices
+               - name: libraries
+                 mountPath: /usr/local/nvidia
+               - mountPath: /dev/shm
+                 name: dshm
+               - mountPath: /gcs-dir
+                 name: gcs-fuse-csi-ephemeral
+          
+              resources:
+                requests:
+                  #cpu: 1
+                  nvidia.com/gpu: 8
+                limits:
+                  #cpu: 1
+                  nvidia.com/gpu: 8
+
+          restartPolicy: OnFailure

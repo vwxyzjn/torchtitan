@@ -1,0 +1,231 @@
+# vcjob-quickstart.yaml
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+metadata:
+  name: a3-mega
+spec:
+  minAvailable: 1
+  schedulerName: volcano
+  # If you omit the 'queue' field, the 'default' queue will be used.
+  # queue: default
+  policies:
+   - event: TaskCompleted
+     action: CompleteJob
+  plugins:
+    pytorch:
+      - --master=master
+      - --worker=worker
+      #- --port=3389 
+    ssh: []
+    env: [] 
+  tasks:
+    - replicas: 1
+      name: master
+      policies:
+      # When this specific task completes successfully, mark the entire job as Complete.
+      - event: TaskCompleted
+        action: CompleteJob
+      template:
+        metadata:
+             annotations:
+               gke-gcsfuse/volumes: "true"
+        spec:
+          nodeSelector:
+             cloud.google.com/gke-accelerator: nvidia-h100-mega-80gb #for non dws
+          tolerations:
+               - key: "nvidia.com/gpu"
+                 operator: "Exists"
+                 effect: "NoSchedule"
+          volumes:
+            - name: nvidia-install-dir-host
+              hostPath:
+                 path: /home/kubernetes/bin/nvidia
+            - name: shared-memory
+              emptyDir:
+                medium: "Memory"
+                sizeLimit: 1Gi
+            - name: libraries
+              hostPath:
+                path: /home/kubernetes/bin/nvidia
+            - name: sys
+              hostPath:
+               path: /sys
+            - name: proc-sys
+              hostPath:
+               path: /proc/sys
+            - name: aperture-devices
+              hostPath:
+               path: /dev/aperture_devices
+            - name: gcs-fuse-csi-ephemeral
+              csi:
+                driver: gcsfuse.csi.storage.gke.io
+                readOnly: false
+                volumeAttributes:
+                   bucketName: rick-llama-factory
+                   mountOptions: "implicit-dirs"
+                   gcsfuseLoggingSeverity: warning
+                   fileCacheCapacity: "200Gi"
+            - name: dshm
+              emptyDir:
+                medium: Memory
+          serviceAccountName: storage-access
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          initContainers:
+            - name: tcpxo-daemon
+              image: us-docker.pkg.dev/gce-ai-infra/gpudirect-tcpxo/tcpgpudmarxd-dev:v1.0.17
+              imagePullPolicy: IfNotPresent
+              restartPolicy: Always
+              securityContext:
+                privileged: true
+                
+              volumeMounts:
+               - name: libraries
+                 mountPath: /usr/local/nvidia
+               - name: sys
+                 mountPath: /hostsysfs
+               - name: proc-sys
+                 mountPath: /hostprocsysfs
+              env:
+                - name: LD_LIBRARY_PATH
+                  value: /usr/local/nvidia/lib64
+             
+          containers:
+           
+          - name: nccl-test
+            image: us-docker.pkg.dev/gce-ai-infra/gpudirect-tcpxo/nccl-plugin-gpudirecttcpx-dev:v1.0.11
+            imagePullPolicy: Always
+            command:
+             - /bin/sh
+             - -c
+             - |
+              cat >/scripts/allgather.sh <<EOF
+              #!/bin/bash
+              /scripts/init_ssh.sh \${@};
+              pushd /scripts;
+              /scripts/gen_hostfiles.sh \${@};
+              popd;
+              BENCHMARK=all_gather_perf NHOSTS=2 NCCL_LIB_DIR="${LD_LIBRARY_PATH}" LD_LIBRARY_PATH="${LD_LIBRARY_PATH}" /scripts/demo-run-nccl-test-tcpxo-via-mpi.sh
+              EOF
+              chmod +x /scripts/allgather.sh
+              service ssh restart;
+              sleep infinity;
+            env:
+            - name: LD_LIBRARY_PATH
+              value: /usr/local/nvidia/lib64
+            securityContext:
+              privileged: true
+            volumeMounts:
+            - name: nvidia-install-dir-host
+              mountPath: /usr/local/nvidia
+            - name: shared-memory
+              mountPath: /dev/shm
+            resources:
+             limits:
+               nvidia.com/gpu: 8
+
+          restartPolicy: OnFailure
+    - replicas: 1
+      name: worker
+      #policies:
+      # When this specific task completes successfully, mark the entire job as Complete.
+      #- event: TaskCompleted
+      #  action: CompleteJob
+      template:
+        metadata:
+             annotations:
+               gke-gcsfuse/volumes: "true"
+        spec:
+          nodeSelector:
+             cloud.google.com/gke-accelerator: nvidia-h100-mega-80gb #for non dws
+          tolerations:
+               - key: "nvidia.com/gpu"
+                 operator: "Exists"
+                 effect: "NoSchedule"
+          volumes:
+            - name: nvidia-install-dir-host
+              hostPath:
+                path: /home/kubernetes/bin/nvidia
+            - name: shared-memory
+              emptyDir:
+                medium: "Memory"
+                sizeLimit: 1Gi
+            - name: libraries
+              hostPath:
+                path: /home/kubernetes/bin/nvidia
+            - name: sys
+              hostPath:
+               path: /sys
+            - name: proc-sys
+              hostPath:
+               path: /proc/sys
+            - name: aperture-devices
+              hostPath:
+               path: /dev/aperture_devices
+            - name: gcs-fuse-csi-ephemeral
+              csi:
+                driver: gcsfuse.csi.storage.gke.io
+                readOnly: false
+                volumeAttributes:
+                   bucketName: rick-llama-factory
+                   mountOptions: "implicit-dirs"
+                   gcsfuseLoggingSeverity: warning
+                   fileCacheCapacity: "200Gi"
+            - name: dshm
+              emptyDir:
+                medium: Memory
+          serviceAccountName: storage-access
+          hostNetwork: true
+          dnsPolicy: ClusterFirstWithHostNet
+          initContainers:
+            - name: tcpxo-daemon
+              image: us-docker.pkg.dev/gce-ai-infra/gpudirect-tcpxo/tcpgpudmarxd-dev:v1.0.17
+              imagePullPolicy: Always
+              restartPolicy: Always
+              securityContext:
+                privileged: true   
+              volumeMounts:
+               - name: libraries
+                 mountPath: /usr/local/nvidia
+               - name: sys
+                 mountPath: /hostsysfs
+               - name: proc-sys
+                 mountPath: /hostprocsysfs
+              env:
+                - name: LD_LIBRARY_PATH
+                  value: /usr/local/nvidia/lib64
+          containers:
+          - name: nccl-test
+            image: us-docker.pkg.dev/gce-ai-infra/gpudirect-tcpxo/nccl-plugin-gpudirecttcpx-dev:v1.0.11
+            imagePullPolicy: Always
+            command:
+             - /bin/sh
+             - -c
+             - |
+              cat >/scripts/allgather.sh <<EOF
+              #!/bin/bash
+              /scripts/init_ssh.sh \${@};
+              pushd /scripts;
+              /scripts/gen_hostfiles.sh \${@};
+              popd;
+              BENCHMARK=all_gather_perf NHOSTS=2 NCCL_LIB_DIR="${LD_LIBRARY_PATH}" LD_LIBRARY_PATH="${LD_LIBRARY_PATH}" /scripts/demo-run-nccl-test-tcpxo-via-mpi.sh
+              EOF
+              chmod +x /scripts/allgather.sh
+              service ssh restart;
+              sleep infinity;
+            env:
+            - name: LD_LIBRARY_PATH
+              value: /usr/local/nvidia/lib64
+            securityContext:
+              privileged: true
+            volumeMounts:
+            - name: nvidia-install-dir-host
+              mountPath: /usr/local/nvidia
+            - name: shared-memory
+              mountPath: /dev/shm
+            resources:
+             limits:
+               nvidia.com/gpu: 8
+
+
+          restartPolicy: OnFailure 

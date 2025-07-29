@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: system-cluster-critical-quota
+  namespace: volcano-system  # Or another namespace where critical pods reside
+spec:
+  hard:
+    pods: "10"  # Example: Limit to 10 pods
+    
+  scopeSelector:
+    matchExpressions:
+    - operator: In
+      scopeName: PriorityClass
+      values: ["system-cluster-critical"]
