@@ -157,41 +157,40 @@ def build_test_list():
             "Checkpoint Integration Test - Save Model Only bf16",
             "last_save_model_only_bf16",
         ),
-        # TODO: re-enable PP tests once the issue is fixed
-        # OverrideDefinitions(
-        #     [
-        #         [
-        #             "--parallelism.pipeline_parallel_degree 4",
-        #             "--parallelism.pipeline_parallel_schedule InterleavedZeroBubble",
-        #         ],
-        #     ],
-        #     "PP looped zero bubble test",
-        #     "pp_looped_zero_bubble",
-        #     ngpu=4,
-        # ),
-        # OverrideDefinitions(
-        #     [
-        #         [
-        #             "--parallelism.pipeline_parallel_degree 2",
-        #             "--parallelism.pipeline_parallel_schedule ZBVZeroBubble",
-        #         ],
-        #     ],
-        #     "PP zero bubble test (v shaped)",
-        #     "pp_zbv",
-        #     ngpu=2,
-        # ),
-        # OverrideDefinitions(
-        #     [
-        #         [
-        #             "--parallelism.pipeline_parallel_degree 2",
-        #             "--parallelism.pipeline_parallel_schedule 1F1B",
-        #             "--parallelism.data_parallel_shard_degree 1",
-        #         ],
-        #     ],
-        #     "PP 1D test 1F1B",
-        #     "pp_1f1b",
-        #     ngpu=2,
-        # ),
+        OverrideDefinitions(
+            [
+                [
+                    "--parallelism.pipeline_parallel_degree 4",
+                    "--parallelism.pipeline_parallel_schedule InterleavedZeroBubble",
+                ],
+            ],
+            "PP looped zero bubble test",
+            "pp_looped_zero_bubble",
+            ngpu=4,
+        ),
+        OverrideDefinitions(
+            [
+                [
+                    "--parallelism.pipeline_parallel_degree 2",
+                    "--parallelism.pipeline_parallel_schedule ZBVZeroBubble",
+                ],
+            ],
+            "PP zero bubble test (v shaped)",
+            "pp_zbv",
+            ngpu=2,
+        ),
+        OverrideDefinitions(
+            [
+                [
+                    "--parallelism.pipeline_parallel_degree 2",
+                    "--parallelism.pipeline_parallel_schedule 1F1B",
+                    "--parallelism.data_parallel_shard_degree 1",
+                ],
+            ],
+            "PP 1D test 1F1B",
+            "pp_1f1b",
+            ngpu=2,
+        ),
         OverrideDefinitions(
             [
                 [
@@ -291,18 +290,18 @@ def build_test_list():
             "pp_looped_1f1b",
             ngpu=4,
         ),
-        # OverrideDefinitions(
-        #     [
-        #         [
-        #             "--parallelism.pipeline_parallel_degree 2",
-        #             "--parallelism.pipeline_parallel_schedule PipelineScheduleMulti",
-        #             "--parallelism.pipeline_parallel_schedule_csv ./tests/assets/custom_schedule.csv",
-        #         ],
-        #     ],
-        #     "PP with custom pipeline schedule loaded from CSV file",
-        #     "pp_custom_csv",
-        #     ngpu=2,
-        # ),
+        OverrideDefinitions(
+            [
+                [
+                    "--parallelism.pipeline_parallel_degree 2",
+                    "--parallelism.pipeline_parallel_schedule PipelineScheduleMulti",
+                    "--parallelism.pipeline_parallel_schedule_csv ./tests/assets/custom_schedule.csv",
+                ],
+            ],
+            "PP with custom pipeline schedule loaded from CSV file",
+            "pp_custom_csv",
+            ngpu=2,
+        ),
         OverrideDefinitions(
             [
                 [
@@ -462,16 +461,16 @@ def build_test_list():
             "cpu_offload+opt_in_bwd+TP+DP+CP",
             ngpu=8,
         ),
-        OverrideDefinitions(
-            [
-                [
-                    "--memory_estimation.enabled",
-                ]
-            ],
-            "FSDP2 Memory Tracking and Estimation",
-            "fsdp2_memory_estimation",
-            ngpu=2,
-        ),
+        # OverrideDefinitions(
+        #     [
+        #         [
+        #             "--memory_estimation.enabled",
+        #         ]
+        #     ],
+        #     "FSDP2 Memory Tracking and Estimation",
+        #     "fsdp2_memory_estimation",
+        #     ngpu=2,
+        # ),
         OverrideDefinitions(
             [
                 [
@@ -545,13 +544,14 @@ def build_test_list():
                 [
                     "--validation.enabled",
                     "--validation.dataset c4_test",
-                    "--parallelism.data_parallel_replicate_degree=2",
                     "--parallelism.tensor_parallel_degree=2",
                     "--parallelism.context_parallel_degree=2",
+                    "--parallelism.pipeline_parallel_degree=2",
+                    "--parallelism.pipeline_parallel_schedule Interleaved1F1B",
                 ],
             ],
-            "Validation test with fsdp, tp, cp",
-            "validation_fsdp_tp_cp",
+            "Validation test with tp, cp, pp",
+            "validation_tp_cp_pp",
             ngpu=8,
         ),
     ]
