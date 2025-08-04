@@ -14,10 +14,12 @@ RUN apt-get -y update && \
 WORKDIR torchtitan
 
 RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir torchao && \
     pip install --no-cache-dir -e .
 
 RUN python scripts/download_tokenizer.py --repo_id deepseek-ai/DeepSeek-V3 && \
     rm -rf /root/.cache/huggingface
 
-
-
+RUN python scripts/download_tokenizer.py --repo_id allenai/Llama-3.1-Tulu-3.1-8B && \
+    mv assets/tokenizer/Llama-3.1-Tulu-3.1-8B assets/tokenizer/Llama-3.1-8B && \
+    rm -rf /root/.cache/huggingface
