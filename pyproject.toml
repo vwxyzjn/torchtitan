@@ -1,57 +1,39 @@
-# ---- All project specifications ---- #
 [project]
 name = "torchtitan"
-description = "A PyTorch native platform for training generative AI models"
+version = "0.1.0"
+description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
-license = {file = "LICENSE"}
-authors = [
-    { name = "PyTorch Team", email = "packages@pytorch.org" },
-]
-keywords = ["pytorch", "training", "llm"]
+requires-python = ">=3.12"
+
+packages = ["torchtitan"]
 dependencies = [
-    # Stateful Dataloader
+    "datasets>=3.6.0",
+    "fsspec>=2025.3.0",
+    "safetensors>=0.6.1",
+    "tabulate>=0.9.0",
+    "tensorboard>=2.20.0",
+    "tokenizers>=0.15.0",
+    "tomli>=1.1.0 ; python_full_version < '3.11'",
+    "torch",
+    "torchao",
+    "torchvision",
+    "pytorch-triton",
     "torchdata>=0.8.0",
-
-    # Hugging Face integrations
-    "datasets>=2.21.0",
-
-    # Tokenization
-    "tokenizers",
-
-    # Miscellaneous
-    "tomli>=1.1.0",
-    "fsspec",
-    "tyro",
-    "tensorboard",
-]
-dynamic = ["version"]
-
-[project.urls]
-GitHub = "https://github.com/pytorch/torchtitan"
-Documentation = "https://github.com/pytorch/torchtitan/tree/main/docs"
-Issues = "https://github.com/pytorch/torchtitan/issues"
-
-[project.optional-dependencies]
-dev = [
-    "pre-commit",
-    "pytest",
-    "pytest-cov",
-    "wandb"
+    "tyro>=0.9.27",
+    "wandb>=0.21.0",
 ]
 
-[tool.setuptools.dynamic]
-version = {file = "assets/version.txt"}
+[tool.uv.sources]
+torch = [{ index = "pytorch-nightly-cu129" }]
+torchvision = [{ index = "pytorch-nightly-cu129" }]
+torchao = [{ index = "pytorch-nightly-cu129" }]
+pytorch-triton = [{ index = "pytorch-nightly-cu129" }]
 
+[[tool.uv.index]]
+name = "pytorch-nightly-cu129"
+url = "https://download.pytorch.org/whl/nightly/cu129"
+explicit = true
 
-# ---- Explicit project build information ---- #
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+[tool.uv]
+prerelease = "allow"
 
-[tool.setuptools.packages.find]
-where = [""]
-include = ["torchtitan*"]
-
-[tool.pytest.ini_options]
-addopts = ["--showlocals"]  # show local variables in tracebacks
